@@ -5,6 +5,7 @@ from collections import defaultdict
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.enums import ParseMode
+from aiogram.client.default import DefaultBotProperties
 
 from config import BOT_TOKEN
 from db import init_db, save_message
@@ -14,8 +15,12 @@ from images import detect_image_request, get_random_image
 
 # -----------------------
 # BOT SETUP
+# FIXED: using DefaultBotProperties to avoid deprecation warning
 # -----------------------
-bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
+bot = Bot(
+    token=BOT_TOKEN,
+    default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+)
 dp = Dispatcher()
 
 
