@@ -33,12 +33,11 @@ def generate_reply(user_id, user_message):
     try:
         prompt = build_prompt(user_id, user_message)
 
-        # Client is created here inside the function
-        # so GEMINI_KEY is always loaded before use
         client = genai.Client(api_key=GEMINI_KEY)
 
+        # FIXED: updated to gemini-2.0-flash which is supported
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-2.0-flash",
             contents=prompt
         )
 
