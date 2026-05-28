@@ -35,9 +35,9 @@ def generate_reply(user_id, user_message):
 
         client = genai.Client(api_key=GEMINI_KEY)
 
-        # FIXED: updated to gemini-2.0-flash which is supported
+        # FIXED: updated to gemini-2.5-flash-lite which is supported
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash-lite",
             contents=prompt
         )
 
