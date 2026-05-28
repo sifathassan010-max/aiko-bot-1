@@ -6,4 +6,4 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 GEMINI_KEY = os.getenv("GEMINI_KEY")
 
-MAX_HISTORY = 15
+MAX_HISTORY = 5
