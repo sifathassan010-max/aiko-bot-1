@@ -2,37 +2,28 @@ import random
 from pathlib import Path
 from aiogram.types import FSInputFile
 
-IMAGE_FOLDERS = {
-    "selfie": "images/selfie",
-    "beach": "images/beach",
-    "outdoor": "images/outdoor",
-}
+IMAGES_ROOT = Path("images")
 
-# Keywords that map to each category
-IMAGE_KEYWORDS = {
-    "selfie": ["selfie", "photo", "pic", "picture", "your photo"],
-    "beach": ["beach", "sea", "ocean", "water"],
-    "outdoor": ["outdoor", "outside", "walk", "park", "garden"],
-}
+
+def get_available_categories():
+    """Automatically detect all subfolders inside images/"""
+    if not IMAGES_ROOT.exists():
+        return []
+    return [f.name for f in IMAGES_ROOT.iterdir() if f.is_dir()]
 
 
 def detect_image_request(text: str):
-    """Check if message is asking for an image. Returns category or None."""
+    """Check if message mentions any available image category."""
     text_lower = text.lower()
-    for category, keywords in IMAGE_KEYWORDS.items():
-        for keyword in keywords:
-            if keyword in text_lower:
-                return category
+    for category in get_available_categories():
+        if category in text_lower:
+            return category
     return None
 
 
 def get_random_image(category: str):
-    """Return a random FSInputFile from the given category folder, or None."""
-    folder_path = IMAGE_FOLDERS.get(category)
-    if not folder_path:
-        return None
-
-    folder = Path(folder_path)
+    """Return a random image from the given category folder, or None."""
+    folder = IMAGES_ROOT / category
     if not folder.exists():
         return None
 
