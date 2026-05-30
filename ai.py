@@ -22,9 +22,9 @@ def build_prompt(user_id, user_message):
 
     prompt = f"""{character}
 
-Conversation so far:
-{convo}
-User: {user_message}
+---
+
+{convo}User: {user_message}
 Aiko:"""
     return prompt
 
@@ -35,14 +35,13 @@ def generate_reply(user_id, user_message):
 
         client = genai.Client(api_key=GEMINI_KEY)
 
-        # FIXED: updated to gemini-2.5-flash-lite which is supported
         response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model="gemini-2.0-flash",
             contents=prompt
         )
 
         if not response or not response.text:
-            return "Sorry, I couldn't think of a reply. Try again!"
+            return "Hmm, my mind went blank for a sec 😅 say that again?"
 
         return response.text.strip()
 
