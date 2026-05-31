@@ -22,17 +22,16 @@ from images import detect_image_request, get_random_image
 
 # ─────────────────────────────────────────────────────────
 # ← YOUR INPUT:
-# BOT_NAME: set to this bot's name in lowercase
-#   Aiko repo  → "aiko"
-#   Hana repo  → "hana"
-#
-# RUN_WEBHOOK: controls whether this bot runs the payment
-#   webhook server. Set to True ONLY in Aiko's repo.
-#   Hana's repo set to False.
-#   You can also set RUN_WEBHOOK env variable in Railway
-#   instead of changing this line.
+# BOT_NAME: "aiko" for Aiko repo, "hana" for Hana repo
+# RUN_WEBHOOK: set via Railway env variable, not here
 BOT_NAME    = "aiko"
 RUN_WEBHOOK = os.getenv("RUN_WEBHOOK", "false").lower() == "true"
+
+# Admin IDs — loaded from Railway env variable ADMIN_IDS
+# These users always have free access (for testing/owner use)
+ADMIN_IDS = set(
+    int(x.strip()) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()
+)
 # ─────────────────────────────────────────────────────────
 
 bot = Bot(
@@ -53,10 +52,17 @@ def is_rate_limited(user_id: int) -> bool:
     return False
 
 
+def has_access(user_id: int) -> bool:
+    """Check if user is admin or has active subscription."""
+    if user_id in ADMIN_IDS:
+        return True
+    return is_user_subscribed(user_id, BOT_NAME)
+
+
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     user_id = message.from_user.id
-    if is_user_subscribed(user_id, BOT_NAME):
+    if has_access(user_id):
         await message.answer("Hey! I'm Aiko 👋 Welcome back!")
     else:
         await message.answer(
@@ -82,7 +88,7 @@ async def cmd_activate(message: types.Message):
     code = parts[1].upper().strip()
     user_id = message.from_user.id
 
-    if is_user_subscribed(user_id, BOT_NAME):
+    if has_access(user_id):
         await message.answer("✅ You already have an active subscription!")
         return
 
@@ -124,6 +130,10 @@ async def cmd_status(message: types.Message):
     user_id = message.from_user.id
     sub = get_user_subscription(user_id, BOT_NAME)
 
+    if user_id in ADMIN_IDS:
+        await message.answer("👑 Admin account — unlimited free access.")
+        return
+
     if not sub:
         await message.answer(
             "You don't have an active subscription.\n\n"
@@ -152,7 +162,7 @@ async def handle_message(message: types.Message):
         if not text:
             return
 
-        if not is_user_subscribed(user_id, BOT_NAME):
+        if not has_access(user_id):
             await message.answer(
                 "⛔ No active subscription.\n\n"
                 f"Subscribe at: {PATREON_URL}\n\n"
@@ -195,7 +205,6 @@ async def main():
     init_db()
     init_subscription_db()
 
-    # Only Aiko's Railway service runs the webhook server
     if RUN_WEBHOOK:
         flask_thread = threading.Thread(target=run_flask, daemon=True)
         flask_thread.start()
