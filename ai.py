@@ -1,6 +1,12 @@
-from google import genai
-from config import GEMINI_KEY, MAX_HISTORY
+from openai import OpenAI
+from config import GROQ_KEY, MAX_HISTORY
 from db import get_history
+
+# Groq client — OpenAI compatible, ultra fast, 14400 req/day free
+client = OpenAI(
+    base_url="https://api.groq.com/openai/v1",
+    api_key=GROQ_KEY,
+)
 
 
 def load_character():
@@ -11,40 +17,31 @@ def load_character():
         return "You are Aiko, a friendly and engaging AI companion. Be playful and conversational."
 
 
-def build_prompt(user_id, user_message):
-    character = load_character()
-    history = get_history(user_id, MAX_HISTORY)
-
-    convo = ""
-    for role, content in history:
-        label = "Aiko" if role == "assistant" else "User"
-        convo += f"{label}: {content}\n"
-
-    prompt = f"""{character}
-
----
-
-{convo}User: {user_message}
-Aiko:"""
-    return prompt
-
-
 def generate_reply(user_id, user_message):
     try:
-        prompt = build_prompt(user_id, user_message)
+        character = load_character()
+        history = get_history(user_id, MAX_HISTORY)
 
-        client = genai.Client(api_key=GEMINI_KEY)
+        messages = [{"role": "system", "content": character}]
 
-        response = client.models.generate_content(
-            model="gemini-1.5-flash-lite",
-            contents=prompt
+        for role, content in history:
+            messages.append({"role": role, "content": content})
+
+        messages.append({"role": "user", "content": user_message})
+
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=messages,
+            max_tokens=300,      # prevents huge replies that eat token quota
+            temperature=0.85,    # makes responses feel natural, not robotic
         )
 
-        if not response or not response.text:
+        reply = response.choices[0].message.content
+        if not reply:
             return "Hmm, my mind went blank for a sec 😅 say that again?"
 
-        return response.text.strip()
+        return reply.strip()
 
     except Exception as e:
-        print(f"[GEMINI ERROR] {repr(e)}")
+        print(f"[AI ERROR] {repr(e)}")
         return "Something went wrong on my end. Try again in a moment!"
