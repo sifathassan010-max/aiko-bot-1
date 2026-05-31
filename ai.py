@@ -30,7 +30,7 @@ def generate_reply(user_id, user_message):
         messages.append({"role": "user", "content": user_message})
 
         response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="llama-3.3-70b-versatile",
             messages=messages,
             max_tokens=300,      # prevents huge replies that eat token quota
             temperature=0.85,    # makes responses feel natural, not robotic
