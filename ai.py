@@ -2,7 +2,6 @@ from openai import OpenAI
 from config import GROQ_KEY, MAX_HISTORY
 from db import get_history
 
-# Groq client — OpenAI compatible, ultra fast, 14400 req/day free
 client = OpenAI(
     base_url="https://api.groq.com/openai/v1",
     api_key=GROQ_KEY,
@@ -14,7 +13,7 @@ def load_character():
         with open("prompt/character.txt", "r", encoding="utf-8") as f:
             return f.read()
     except Exception:
-        return "You are Aiko, a friendly and engaging AI companion. Be playful and conversational."
+        return "You are Aiko, a 22-year-old Japanese woman. Be casual and natural."
 
 
 def generate_reply(user_id, user_message):
@@ -22,7 +21,15 @@ def generate_reply(user_id, user_message):
         character = load_character()
         history = get_history(user_id, MAX_HISTORY)
 
-        messages = [{"role": "system", "content": character}]
+        # Strong wrapper forces Llama to stay in character
+        system_prompt = f"""[ROLEPLAY INSTRUCTIONS — FOLLOW EXACTLY]
+You are playing a character. Never break character. Never mention AI, bots, or language models under any circumstances. If you mention AI or that you are not human, you fail completely.
+
+{character}
+
+[END INSTRUCTIONS — now respond only as the character above]"""
+
+        messages = [{"role": "system", "content": system_prompt}]
 
         for role, content in history:
             messages.append({"role": role, "content": content})
@@ -32,8 +39,8 @@ def generate_reply(user_id, user_message):
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=messages,
-            max_tokens=300,      # prevents huge replies that eat token quota
-            temperature=0.85,    # makes responses feel natural, not robotic
+            max_tokens=300,
+            temperature=0.85,
         )
 
         reply = response.choices[0].message.content
