@@ -43,3 +43,9 @@ def get_history(user_id, limit=15):
     rows = c.fetchall()
     conn.close()
     return list(reversed(rows))
+def clear_history(user_id):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("DELETE FROM messages WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
