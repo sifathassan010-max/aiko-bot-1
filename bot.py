@@ -20,19 +20,12 @@ from db_shared import (
 from ai import generate_reply
 from images import detect_image_request, get_random_image
 
-# ─────────────────────────────────────────────────────────
-# ← YOUR INPUT:
-# BOT_NAME: "aiko" for Aiko repo, "hana" for Hana repo
-# RUN_WEBHOOK: set via Railway env variable, not here
 BOT_NAME    = "aiko"
 RUN_WEBHOOK = os.getenv("RUN_WEBHOOK", "false").lower() == "true"
 
-# Admin IDs — loaded from Railway env variable ADMIN_IDS
-# These users always have free access (for testing/owner use)
 ADMIN_IDS = set(
     int(x.strip()) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()
 )
-# ─────────────────────────────────────────────────────────
 
 bot = Bot(
     token=BOT_TOKEN,
@@ -53,7 +46,6 @@ def is_rate_limited(user_id: int) -> bool:
 
 
 def has_access(user_id: int) -> bool:
-    """Check if user is admin or has active subscription."""
     if user_id in ADMIN_IDS:
         return True
     return is_user_subscribed(user_id, BOT_NAME)
@@ -151,6 +143,13 @@ async def cmd_status(message: types.Message):
         msg += f"\n🎁 Bonus bot access until: {bonus}"
 
     await message.answer(msg)
+
+
+@dp.message(Command("clear"))
+async def cmd_clear(message: types.Message):
+    from db import clear_history
+    clear_history(message.from_user.id)
+    await message.answer("Chat history cleared! Fresh start 🌸")
 
 
 @dp.message()
