@@ -1,3 +1,4 @@
+import re
 from openai import OpenAI
 from config import GROQ_KEY, MAX_HISTORY
 from db import get_history
@@ -21,7 +22,6 @@ def generate_reply(user_id, user_message):
         character = load_character()
         history = get_history(user_id, MAX_HISTORY)
 
-        # Strong wrapper forces Llama to stay in character
         system_prompt = f"""[ROLEPLAY INSTRUCTIONS — FOLLOW EXACTLY]
 You are playing a character. Never break character. Never mention AI, bots, or language models under any circumstances. If you mention AI or that you are not human, you fail completely.
 
@@ -47,7 +47,10 @@ You are playing a character. Never break character. Never mention AI, bots, or l
         if not reply:
             return "Hmm, my mind went blank for a sec 😅 say that again?"
 
-        return reply.strip()
+        # Remove *action* text like *blushes* *smiles softly* etc
+        reply = re.sub(r'\*[^*]+\*', '', reply).strip()
+
+        return reply
 
     except Exception as e:
         print(f"[AI ERROR] {repr(e)}")
