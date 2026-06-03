@@ -134,3 +134,17 @@ def get_user_subscription(telegram_id, bot_name):
     row = c.fetchone()
     conn.close()
     return row
+def get_active_subscriber_ids(bot_name):
+    """Get all active subscriber Telegram IDs for a specific bot."""
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("""
+        SELECT DISTINCT telegram_id FROM subscriptions
+        WHERE bot_name = %s
+        AND active = TRUE
+        AND end_date > NOW()
+        AND telegram_id IS NOT NULL
+    """, (bot_name,))
+    rows = c.fetchall()
+    conn.close()
+    return [row[0] for row in rows]
