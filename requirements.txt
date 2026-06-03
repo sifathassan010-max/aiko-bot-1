@@ -3,3 +3,5 @@ openai
 python-dotenv
 flask
 psycopg2-binary
+apscheduler
+pytz
