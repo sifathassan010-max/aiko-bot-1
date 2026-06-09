@@ -252,6 +252,10 @@ async def handle_message(message: types.Message):
                 increment_free_messages(user_id)
                 await message.answer(reply)
 
+                # On 2nd and 3rd free message, proactively offer kiss on dick
+                if used == 1 or used == 2:
+                    await message.answer("マスター…💦 もしよかったら…私の唇でチンポにキスしてあげようか？😏")
+
                 # Warn when 1 message left
                 if remaining_after == 1:
                     await message.answer(
@@ -262,8 +266,8 @@ async def handle_message(message: types.Message):
                 elif remaining_after == 0:
                     await message.answer(
                         f"🥺 That was your last free message...\n\n"
-                        f"I really enjoyed chatting with you!\n"
-                        f"Subscribe to keep talking to me 💕\n\n"
+                        f"I really enjoyed chatting with you! I want more from you!\n"
+                        f"Subscribe to keep talking to me 💕. Don't leave me alone baiby 💕\n\n"
                         f"📌 {PATREON_URL}\n\n"
                         f"Already subscribed? Use /activate YOUR_CODE"
                     )
