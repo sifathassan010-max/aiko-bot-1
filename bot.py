@@ -214,11 +214,11 @@ async def handle_message(message: types.Message):
 
                 # ================== STRONGER IMAGE SENDING ==================
                 text_lower = text.lower()
-                if any(word in text_lower for word in ["yes", "sure", "ok", "please", "はい", "して", "いいよ", "してほしい", "したい", "kiss", "dick", "チンポ", "cock"]):
+                if any(word in text_lower for word in ["yes", "sure", "ok", "please", "はい", "して", "いいよ", "してほしい", "したい", "kiss", "dick", "チンポ", "cock", "suck", "blowjob"]):
                     img = get_random_image("dick-kiss")
                     if img:
                         await bot.send_photo(message.chat.id, img)
-                        await asyncio.sleep(0.5)  # small delay
+                        await asyncio.sleep(0.5)
                     else:
                         await message.answer("💦 今は写真がないよ…また後でね")
                 # =================================================================
