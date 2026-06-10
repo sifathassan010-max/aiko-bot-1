@@ -12,21 +12,19 @@ def get_available_categories():
 
 def detect_image_request(text: str):
     """Check if message mentions any available image category."""
+    if not text:
+        return None
     text_lower = text.lower()
     
-    # ================== KEYWORD MAP ==================
+    # ================== KEYWORD MAP (This is used first) ==================
     keyword_map = {
-        "kiss": "kiss",
-        "kissing": "kiss",
-        "chu": "kiss",
-        "キス": "kiss",
-        "ちゅっ": "kiss",
-        "lip kiss": "lip-kiss",
-        "lips kiss": "lip-kiss",
-        "kiss on lips": "lip-kiss",
-        
+        "kiss": "dick-kiss",
+        "kissing": "dick-kiss",
+        "chu": "dick-kiss",
+        "キス": "dick-kiss",
+        "ちゅっ": "dick-kiss",
         "dick kiss": "dick-kiss",
-        "kiss on dick": "dick-kiss",
+        "kiss dick": "dick-kiss",
         "kiss my dick": "dick-kiss",
         "cock kiss": "dick-kiss",
         "suck dick": "dick-kiss",
@@ -34,6 +32,13 @@ def detect_image_request(text: str):
         "dick": "dick-kiss",
         "cock": "dick-kiss",
         "チンポ": "dick-kiss",
+        
+        "picture": "dick-kiss",
+        "photo": "dick-kiss",
+        "pic": "dick-kiss",
+        "画像": "dick-kiss",
+        "送って": "dick-kiss",
+        "send": "dick-kiss",
         
         "boobs": "boobs",
         "breast": "boobs",
@@ -67,20 +72,15 @@ def detect_image_request(text: str):
         "nude": "nude",
         "naked": "nude",
         "full nude": "nude",
-        "picture": "nude",
-        "photo": "nude",
-        "pic": "nude",
-        "画像": "nude",
-        "送って": "nude",
     }
-    # ================================================
+    # =====================================================================
 
-    # Check keyword map first
+    # Check keyword map first (most important)
     for keyword, folder_name in keyword_map.items():
         if keyword in text_lower:
             return folder_name
 
-    # Fallback to automatic folder name detection
+    # Fallback: check actual folder names
     for category in get_available_categories():
         if category in text_lower:
             return category
