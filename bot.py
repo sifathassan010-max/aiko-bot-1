@@ -212,14 +212,17 @@ async def handle_message(message: types.Message):
                 if used == 1 or used == 2:
                     await message.answer("マスター…💦 もしよかったら…私の唇でチンポにキスしてあげようか？😏")
 
-                # ================== IMPROVED: Send dick kiss image if user agrees ==================
+                # ================== STRONGER IMAGE SENDING ==================
                 text_lower = text.lower()
-                if any(word in text_lower for word in ["yes", "sure", "ok", "please", "はい", "して", "いいよ", "してほしい", "したい"]):
+                if any(word in text_lower for word in ["yes", "sure", "ok", "please", "はい", "して", "いいよ", "してほしい", "したい", "kiss", "dick", "チンポ", "cock"]):
                     img = get_random_image("dick-kiss")
                     if img:
                         await bot.send_photo(message.chat.id, img)
+                        await asyncio.sleep(0.5)  # small delay
                     else:
                         await message.answer("💦 今は写真がないよ…また後でね")
+                # =================================================================
+
                 # Warn when 1 message left
                 if remaining_after == 1:
                     await message.answer(
