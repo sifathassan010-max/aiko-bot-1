@@ -212,15 +212,18 @@ async def handle_message(message: types.Message):
                 if used == 1 or used == 2:
                     await message.answer("マスター…💦 もしよかったら…私の唇でチンポにキスしてあげようか？😏")
 
-                # ================== STRONGER IMAGE SENDING ==================
+                # ================== VERY STRONG IMAGE TRIGGER ==================
                 text_lower = text.lower()
-                if any(word in text_lower for word in ["yes", "sure", "ok", "please", "はい", "して", "いいよ", "してほしい", "したい", "kiss", "dick", "チンポ", "cock", "suck", "blowjob"]):
+                if any(word in text_lower for word in [
+                    "yes", "sure", "ok", "please", "はい", "して", "いいよ", "してほしい", "したい",
+                    "kiss", "dick", "cock", "チンポ", "picture", "photo", "画像", "送って", "send me", "suck", "blowjob"
+                ]):
                     img = get_random_image("dick-kiss")
                     if img:
                         await bot.send_photo(message.chat.id, img)
-                        await asyncio.sleep(0.5)
+                        await asyncio.sleep(0.8)
                     else:
-                        await message.answer("💦 今は写真がないよ…また後でね")
+                        await message.answer("💦 待っててね、今エッチな写真送るよ…😏")
                 # =================================================================
 
                 # Warn when 1 message left
