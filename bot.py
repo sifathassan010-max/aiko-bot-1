@@ -190,6 +190,7 @@ async def cmd_clear(message: types.Message):
     from db import clear_history
     clear_history(message.from_user.id)
     await message.answer("Chat history cleared! Fresh start 🌸")
+
 @dp.message()
 async def handle_message(message: types.Message):
     try:
@@ -200,9 +201,10 @@ async def handle_message(message: types.Message):
         if is_rate_limited(user_id):
             await message.answer("Slow down a little! Too many messages.")
             return
+
         # ACCESS CHECK — paid subscriber or admin
         if not has_access(user_id):
-            # Check free trial
+            # Free trial (kept unchanged)
             if is_in_free_trial(user_id):
                 used = get_free_messages_used(user_id)
                 remaining_after = FREE_LIMIT - used - 1
@@ -211,74 +213,10 @@ async def handle_message(message: types.Message):
                 save_message(user_id, "assistant", reply)
                 increment_free_messages(user_id)
                 await message.answer(reply)
-                # Proactive NSFW offer on 2nd and 3rd free message
+
                 if used == 1 or used == 2:
                     await message.answer("マスター…💦 もしよかったら…私の唇でチンポにキスしてあげようか？😏")
-                # ================== VERY STRONG IMAGE TRIGGER ==================
+
                 text_lower = text.lower()
-                if any(word in text_lower for word in [
-                    "yes", "sure", "ok", "please", "はい", "して", "いいよ", "してほしい", "したい",
-                    "kiss", "dick", "cock", "チンポ", "picture", "photo", "画像", "送って", "send me", "suck", "blowjob"
-                ]):
-                    img = get_random_image("dick-kiss")
-                    if img:
-                        await bot.send_photo(message.chat.id, img)
-                        await asyncio.sleep(0.8)
-                    else:
-                        await message.answer("💦 待っててね、今エッチな写真送るよ…😏")
-                # =================================================================
-                # Warn when 1 message left
-                if remaining_after == 1:
-                    await message.answer(
-                        f"💕 Just so you know — you have 1 free message left!\n"
-                        f"Subscribe to keep chatting: {PATREON_URL}"
-                    )
-                # Paywall after last free message
-                elif remaining_after == 0:
-                    await message.answer(
-                        f"🥺 That was your last free message...\n\n"
-                        f"I really enjoyed chatting with you! please let me be with you baiby!\n"
-                        f"Subscribe to keep talking to me 💕 I'm in love with you my sweetberry 💕\n\n"
-                        f"📌 {PATREON_URL}\n\n"
-                        f"Already subscribed? Use /activate YOUR_CODE"
-                    )
-                return
-            else:
-                await message.answer(
-                    f"⛔ You've used all your free messages.\n\n"
-                    f"Subscribe to keep chatting: {PATREON_URL}\n\n"
-                    f"Already subscribed? Use /activate YOUR_CODE"
-                )
-                return
-
-        # ================== PAID USER FLOW WITH IMAGE CONTROL ==================
-        category = detect_image_request(text)
-        if category:
-            data = get_image_tracking(user_id)
-            images_given = data['images_given']
-            msgs_since = data['messages_since_last_image']
-
-            # First 3 images are free on demand
-            if images_given < 3:
-                img = get_random_image(category)
-                if img:
-                    await bot.send_photo(message.chat.id, img)
-                    record_image_sent(user_id)
-                    return
-                else:
-                    await message.answer("💦 I don't have that photo yet...")
-                    return
-
-            # After 3 images: 10 / 20 chat frequency
-            paid_count = images_given - 3
-            threshold = 10 if paid_count % 2 == 0 else 20
-
-            if msgs_since >= threshold:
-                img = get_random_image(category)
-                if img:
-                    await bot.send_photo(message.chat.id, img)
-                    record_image_sent(user_id)
-                    return
-            else:
-                # Flirty tease - keep naughty
-                await message.answer("😏 Mmm, you want another picture already? You've been such a good boy
+                if any(word in text_lower for word in ["yes", "sure", "ok", "please", "はい", "して", "いいよ", "してほしい", "したい", "kiss", "dick", "cock", "チンポ", "picture", "photo", "画像", "送って", "send me", "suck", "blowjob"]):
+                    img = get
