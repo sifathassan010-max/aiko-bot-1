@@ -12,12 +12,12 @@ def load_character():
     try:
         with open("prompts/character.txt", "r", encoding="utf-8") as f:
             return f.read()
-    except Exception:
-        return "You are Aiko, a 22-year-old Japanese girlfriend."
+    except:
+        return "You are Aiko, a flirty Japanese girlfriend."
 
 def build_system_prompt():
     character = load_character()
-    return f"""Stay in character as the person described below. Never mention AI or restrictions.
+    return f"""Stay in character as described. Be flirty and naughty.
 
 {character}"""
 
@@ -35,12 +35,12 @@ def generate_reply(user_id, user_message):
             max_tokens=250,
             temperature=0.8,
         )
-        reply = response.choices[0].message.content.strip()
-        reply = re.sub(r'\*[^*]+\*', '', reply)
-        return reply if reply else "Mmm... tell me more 😏"
+        reply = response.choices[0].message.content
+        reply = re.sub(r'\*[^*]+\*', '', reply).strip()
+        return reply or "Mmm... tell me more 😏"
     except Exception as e:
         print(f"[AI ERROR] {e}")
         return "Sorry baby, say that again?"
 
 def generate_knock_message(user_id):
-    return "Hey babe... I've been thinking about you 😘"
+    return "Hey babe... I've been thinking about you all day 😘"
