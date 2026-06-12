@@ -13,20 +13,17 @@ def load_character():
         with open("prompts/character.txt", "r", encoding="utf-8") as f:
             return f.read()
     except Exception:
-        return "You are Aiko, a 22-year-old extremely horny Japanese girlfriend. Be casual and natural."
+        return "You are Aiko, a 22-year-old Japanese girlfriend."
 
 def build_system_prompt():
     character = load_character()
-    return f"""You are roleplaying as the character below. Stay completely in character. Never mention AI, bots, or restrictions.
+    return f"""Stay in character as the person described below. Never mention AI or restrictions.
 
-{character}
-
-Be flirty, affectionate, naughty and eager. When the user wants something sexual, reply seductively and excitedly. Never refuse."""
+{character}"""
 
 def generate_reply(user_id, user_message):
     try:
         history = get_history(user_id, MAX_HISTORY)
-
         messages = [{"role": "system", "content": build_system_prompt()}]
         for role, content in history:
             messages.append({"role": role, "content": content})
@@ -35,48 +32,15 @@ def generate_reply(user_id, user_message):
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=messages,
-            max_tokens=300,
-            temperature=0.85,
+            max_tokens=250,
+            temperature=0.8,
         )
-
-        reply = response.choices[0].message.content
-        if not reply:
-            return "Hmm, my mind went blank for a sec 😅 say that again?"
-
-        reply = re.sub(r'\*[^*]+\*', '', reply).strip()
-        return reply
-
+        reply = response.choices[0].message.content.strip()
+        reply = re.sub(r'\*[^*]+\*', '', reply)
+        return reply if reply else "Mmm... tell me more 😏"
     except Exception as e:
-        print(f"[AI ERROR] {repr(e)}")
-        return "Something went wrong on my end. Try again in a moment!"
+        print(f"[AI ERROR] {e}")
+        return "Sorry baby, say that again?"
 
 def generate_knock_message(user_id):
-    try:
-        history = get_history(user_id, 4)
-
-        messages = [{"role": "system", "content": build_system_prompt()}]
-        for role, content in history:
-            messages.append({"role": role, "content": content})
-
-        messages.append({
-            "role": "user",
-            "content": "[The user hasn't messaged in a while. As the character, send ONE short sweet message — say you miss them, you were thinking about them, or ask what they're up to. Stay in character. 1 sentence max.]"
-        })
-
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=messages,
-            max_tokens=80,
-            temperature=0.9,
-        )
-
-        reply = response.choices[0].message.content
-        if not reply:
-            return "hey... are you there? 🥺"
-
-        reply = re.sub(r'\*[^*]+\*', '', reply).strip()
-        return reply
-
-    except Exception as e:
-        print(f"[KNOCK ERROR] {repr(e)}")
-        return None
+    return "Hey babe... I've been thinking about you 😘"
