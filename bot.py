@@ -19,7 +19,10 @@ from db_shared import (
     use_activation_code,
     is_user_subscribed,
     get_user_subscription,
-    get_active_subscriber_ids
+    get_active_subscriber_ids,
+    get_image_tracking,
+    record_image_sent,
+    increment_message_counter
 )
 from ai import generate_reply, generate_knock_message
 from images import detect_image_request, get_random_image
@@ -211,7 +214,6 @@ async def handle_message(message: types.Message):
                 # Proactive NSFW offer on 2nd and 3rd free message
                 if used == 1 or used == 2:
                     await message.answer("マスター…💦 もしよかったら…私の唇でチンポにキスしてあげようか？😏")
-
                 # ================== VERY STRONG IMAGE TRIGGER ==================
                 text_lower = text.lower()
                 if any(word in text_lower for word in [
@@ -225,7 +227,6 @@ async def handle_message(message: types.Message):
                     else:
                         await message.answer("💦 待っててね、今エッチな写真送るよ…😏")
                 # =================================================================
-
                 # Warn when 1 message left
                 if remaining_after == 1:
                     await message.answer(
@@ -249,49 +250,35 @@ async def handle_message(message: types.Message):
                     f"Already subscribed? Use /activate YOUR_CODE"
                 )
                 return
-        # Paid user flow
+
+        # ================== PAID USER FLOW WITH IMAGE CONTROL ==================
         category = detect_image_request(text)
         if category:
-            img = get_random_image(category)
-            if img:
-                await bot.send_photo(message.chat.id, img)
-                return
+            data = get_image_tracking(user_id)
+            images_given = data['images_given']
+            msgs_since = data['messages_since_last_image']
+
+            # First 3 images are free on demand
+            if images_given < 3:
+                img = get_random_image(category)
+                if img:
+                    await bot.send_photo(message.chat.id, img)
+                    record_image_sent(user_id)
+                    return
+                else:
+                    await message.answer("💦 I don't have that photo yet...")
+                    return
+
+            # After 3 images: 10 / 20 chat frequency
+            paid_count = images_given - 3
+            threshold = 10 if paid_count % 2 == 0 else 20
+
+            if msgs_since >= threshold:
+                img = get_random_image(category)
+                if img:
+                    await bot.send_photo(message.chat.id, img)
+                    record_image_sent(user_id)
+                    return
             else:
-                await message.answer("I don't have any photos for that yet!")
-                return
-        save_message(user_id, "user", text)
-        reply = generate_reply(user_id, text)
-        save_message(user_id, "assistant", reply)
-        await message.answer(reply)
-    except Exception as e:
-        print(f"[HANDLER ERROR] {e}")
-        await message.answer("Something went wrong. Try again!")
-def run_flask():
-    from webhook_server import app as flask_app
-    port = int(os.environ.get("PORT", 8080))
-    print(f"[FLASK] Webhook server on port {port}")
-    flask_app.run(host="0.0.0.0", port=port)
-async def main():
-    init_db()
-    init_subscription_db()
-    if RUN_WEBHOOK:
-        flask_thread = threading.Thread(target=run_flask, daemon=True)
-        flask_thread.start()
-        print("[FLASK] Webhook server started")
-    scheduler = AsyncIOScheduler(timezone=JST)
-    scheduler.add_job(send_morning_messages, CronTrigger(hour=8, minute=0, timezone=JST))
-    scheduler.add_job(send_night_messages, CronTrigger(hour=22, minute=0, timezone=JST))
-    scheduler.add_job(check_inactive_users, CronTrigger(hour='*/4', timezone=JST))
-    scheduler.start()
-    print("[SCHEDULER] Started — morning 8AM, night 10PM, inactivity every 4hrs (JST)")
-    print("Starting bot...")
-    while True:
-        try:
-            await bot.delete_webhook(drop_pending_updates=True)
-            print("Bot is running.")
-            await dp.start_polling(bot)
-        except Exception as e:
-            print(f"[CRASH] {e} — restarting in 5 seconds...")
-            await asyncio.sleep(5)
-if __name__ == "__main__":
-    asyncio.run(main())
+                # Flirty tease - keep naughty
+                await message.answer("😏 Mmm, you want another picture already? You've been such a good boy
