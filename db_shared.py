@@ -43,6 +43,13 @@ def init_subscription_db():
             messages_used INTEGER DEFAULT 0
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS image_tracking (
+            user_id BIGINT PRIMARY KEY,
+            images_given INTEGER DEFAULT 0,
+            messages_since_last_image INTEGER DEFAULT 0
+        )
+    """)
     conn.commit()
     conn.close()
     print("[DB] Subscription tables ready.")
@@ -154,6 +161,41 @@ def increment_free_messages(user_id):
         INSERT INTO free_trials (user_id, messages_used)
         VALUES (%s, 1)
         ON CONFLICT (user_id) DO UPDATE SET messages_used = free_trials.messages_used + 1
+    """, (user_id,))
+    conn.commit()
+    conn.close()
+
+def get_image_tracking(user_id):
+    conn = get_conn()
+    c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    c.execute("SELECT * FROM image_tracking WHERE user_id = %s", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        return {'images_given': row['images_given'], 'messages_since_last_image': row['messages_since_last_image']}
+    return {'images_given': 0, 'messages_since_last_image': 0}
+
+def record_image_sent(user_id):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("""
+        INSERT INTO image_tracking (user_id, images_given, messages_since_last_image)
+        VALUES (%s, 1, 0)
+        ON CONFLICT (user_id) DO UPDATE SET
+            images_given = image_tracking.images_given + 1,
+            messages_since_last_image = 0
+    """, (user_id,))
+    conn.commit()
+    conn.close()
+
+def increment_message_counter(user_id):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("""
+        INSERT INTO image_tracking (user_id, images_given, messages_since_last_image)
+        VALUES (%s, 0, 1)
+        ON CONFLICT (user_id) DO UPDATE SET
+            messages_since_last_image = image_tracking.messages_since_last_image + 1
     """, (user_id,))
     conn.commit()
     conn.close()
