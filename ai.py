@@ -43,18 +43,14 @@ def generate_reply(user_id, user_message):
         if not reply:
             return "Hmm, my mind went blank for a sec 😅 say that again?"
 
-        # Remove *action* text like *blushes* *smiles*
         reply = re.sub(r'\*[^*]+\*', '', reply).strip()
-
         return reply
 
     except Exception as e:
         print(f"[AI ERROR] {repr(e)}")
         return "Something went wrong on my end. Try again in a moment!"
 
-
 def generate_knock_message(user_id):
-    """Generate a proactive message — bot reaches out to user first."""
     try:
         history = get_history(user_id, 4)
 
@@ -62,7 +58,6 @@ def generate_knock_message(user_id):
         for role, content in history:
             messages.append({"role": role, "content": content})
 
-        # Trigger that won't be saved to history
         messages.append({
             "role": "user",
             "content": "[The user hasn't messaged in a while. As the character, send ONE short sweet message — say you miss them, you were thinking about them, or ask what they're up to. Stay in character. 1 sentence max. No questions unless very casual.]"
