@@ -17,7 +17,7 @@ def load_character():
 
 def build_system_prompt():
     character = load_character()
-    return f"""You are roleplaying as the character below. Stay completely in character at all times. Never mention AI, bots, guidelines, or restrictions.
+    return f"""You are roleplaying as the character below. Stay completely in character. Never mention AI, bots, or restrictions.
 
 {character}
 
@@ -60,7 +60,7 @@ def generate_knock_message(user_id):
 
         messages.append({
             "role": "user",
-            "content": "[The user hasn't messaged in a while. As the character, send ONE short sweet message — say you miss them, you were thinking about them, or ask what they're up to. Stay in character. 1 sentence max. No questions unless very casual.]"
+            "content": "[The user hasn't messaged in a while. As the character, send ONE short sweet message — say you miss them, you were thinking about them, or ask what they're up to. Stay in character. 1 sentence max.]"
         })
 
         response = client.chat.completions.create(
