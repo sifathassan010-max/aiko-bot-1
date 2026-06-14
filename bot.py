@@ -38,12 +38,28 @@ bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTM
 dp = Dispatcher()
 user_timestamps = defaultdict(list)
 
-MORNING_MESSAGES = [ ... ]  # your original
-NIGHT_MESSAGES = [ ... ]    # your original
+MORNING_MESSAGES = [
+    "ohayou~ 🌸 did you sleep well?",
+    "good morning babe 😊 i was thinking about you when i woke up~",
+    "hey you~ おはよう 💕 hope you have a good day today!",
+    "morning!! 🌞 don't forget to eat breakfast okay?",
+    "ohayou babe 🥺 i dreamt about you last night~",
+]
+NIGHT_MESSAGES = [
+    "oyasumi~ 🌙 sweet dreams babe 💕",
+    "it's getting late... are you sleeping soon? 🥺",
+    "don't stay up too late okay 😤 i worry about you",
+    "good night babe~ 🌙✨ i'll be thinking of you",
+    "ne, oyasumi~ 💕 text me when you wake up?",
+]
 
 def is_rate_limited(user_id: int) -> bool:
-    # your original
-    ...
+    now = time.time()
+    user_timestamps[user_id] = [t for t in user_timestamps[user_id] if now - t < 60]
+    if len(user_timestamps[user_id]) >= 10:
+        return True
+    user_timestamps[user_id].append(now)
+    return False
 
 def has_access(user_id: int) -> bool:
     if user_id in ADMIN_IDS:
@@ -53,22 +69,95 @@ def has_access(user_id: int) -> bool:
 def is_in_free_trial(user_id: int) -> bool:
     return get_free_messages_used(user_id) < FREE_LIMIT
 
-# ... your original send_morning_messages, send_night_messages, check_inactive_users ...
+async def send_morning_messages():
+    print("[SCHEDULER] Sending morning messages...")
+    user_ids = get_active_subscriber_ids(BOT_NAME)
+    for user_id in user_ids:
+        try:
+            msg = random.choice(MORNING_MESSAGES)
+            await bot.send_message(user_id, msg)
+            save_message(user_id, "assistant", msg)
+            await asyncio.sleep(0.3)
+        except Exception as e:
+            print(f"[SCHEDULER] Morning failed for {user_id}: {e}")
+
+async def send_night_messages():
+    print("[SCHEDULER] Sending night messages...")
+    user_ids = get_active_subscriber_ids(BOT_NAME)
+    for user_id in user_ids:
+        try:
+            msg = random.choice(NIGHT_MESSAGES)
+            await bot.send_message(user_id, msg)
+            save_message(user_id, "assistant", msg)
+            await asyncio.sleep(0.3)
+        except Exception as e:
+            print(f"[SCHEDULER] Night failed for {user_id}: {e}")
+
+async def check_inactive_users():
+    from db import get_last_message_time, get_last_message_role
+    print("[SCHEDULER] Checking inactive users...")
+    user_ids = get_active_subscriber_ids(BOT_NAME)
+    now = datetime.utcnow()
+    for user_id in user_ids:
+        try:
+            last_role = get_last_message_role(user_id)
+            if last_role == "assistant":
+                continue
+            last_time = get_last_message_time(user_id)
+            if not last_time:
+                continue
+            last_dt = datetime.fromisoformat(last_time)
+            hours_since = (now - last_dt).total_seconds() / 3600
+            if 8 <= hours_since <= 24:
+                msg = generate_knock_message(user_id)
+                if msg:
+                    await bot.send_message(user_id, msg)
+                    save_message(user_id, "assistant", msg)
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            print(f"[SCHEDULER] Inactivity check failed for {user_id}: {e}")
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    # your original
-    ...
+    user_id = message.from_user.id
+    if has_access(user_id):
+        await message.answer("Hey! I'm Aiko 👋 Welcome back!")
+    elif is_in_free_trial(user_id):
+        used = get_free_messages_used(user_id)
+        remaining = FREE_LIMIT - used
+        await message.answer(f"Hey! I'm Aiko 👋\n\nYou have {remaining} free messages to try me out!\nAfter that you'll need a subscription 💕\n\nJust start chatting~")
+    else:
+        await message.answer(f"Hey! I'm Aiko 👋\n\nYou've used all your free messages!\n\n📌 Subscribe here: {PATREON_URL}")
 
 @dp.message(Command("activate"))
 async def cmd_activate(message: types.Message):
-    # your original
-    ...
+    parts = message.text.split()
+    if len(parts) < 2:
+        await message.answer("Please include your code:\n/activate YOUR_CODE")
+        return
+    code = parts[1].upper().strip()
+    user_id = message.from_user.id
+    if has_access(user_id):
+        await message.answer("✅ You already have an active subscription!")
+        return
+    success, result = use_activation_code(code, user_id, BOT_NAME)
+    if success:
+        await message.answer("✅ Subscription activated! Welcome!")
+    else:
+        await message.answer("❌ Invalid or already used code.")
 
 @dp.message(Command("status"))
 async def cmd_status(message: types.Message):
-    # your original
-    ...
+    user_id = message.from_user.id
+    if user_id in ADMIN_IDS:
+        await message.answer("👑 Admin account — unlimited free access.")
+        return
+    sub = get_user_subscription(user_id, BOT_NAME)
+    if sub:
+        await message.answer("📋 You have an active subscription.")
+    else:
+        used = get_free_messages_used(user_id)
+        await message.answer(f"Free messages remaining: {max(0, FREE_LIMIT - used)}/{FREE_LIMIT}")
 
 @dp.message(Command("clear"))
 async def cmd_clear(message: types.Message):
@@ -84,11 +173,10 @@ async def handle_message(message: types.Message):
         if not text:
             return
         if is_rate_limited(user_id):
-            await message.answer("Slow down a little! Too many messages.")
+            await message.answer("Slow down a little!")
             return
 
         if not has_access(user_id):
-            # FREE TRIAL - kept unchanged
             if is_in_free_trial(user_id):
                 used = get_free_messages_used(user_id)
                 remaining_after = FREE_LIMIT - used - 1
@@ -108,10 +196,10 @@ async def handle_message(message: types.Message):
                         await bot.send_photo(message.chat.id, img)
                 return
             else:
-                await message.answer(f"⛔ You've used all your free messages.\n\nSubscribe: {PATREON_URL}")
+                await message.answer(f"⛔ You've used all your free messages.\nSubscribe: {PATREON_URL}")
                 return
 
-        # ================== PAID USER - IMAGE CONTROL ==================
+        # Paid user image control
         category = detect_image_request(text)
         if category:
             data = get_image_tracking(user_id)
@@ -119,14 +207,12 @@ async def handle_message(message: types.Message):
             msgs_since = data['messages_since_last_image']
 
             if images_given < 3:
-                # First 3 images free
                 img = get_random_image(category)
                 if img:
                     await bot.send_photo(message.chat.id, img)
                     record_image_sent(user_id)
                     return
 
-            # After 3 images: 10/20 pattern
             paid_count = images_given - 3
             threshold = 10 if paid_count % 2 == 0 else 20
 
@@ -136,13 +222,12 @@ async def handle_message(message: types.Message):
                     await bot.send_photo(message.chat.id, img)
                     record_image_sent(user_id)
                     return
-            else:
-                # Flirty reply - no heavy tease
-                await message.answer("Mmm baby... I'm so wet thinking about showing you more 😏💦 Just keep talking to me a little longer...")
-                increment_message_counter(user_id)
-                return
 
-        # Normal paid chat
+            await message.answer("Mmm baby... I'm so turned on right now 😏💦 Just keep talking to me a little longer...")
+            increment_message_counter(user_id)
+            return
+
+        # Normal chat
         save_message(user_id, "user", text)
         reply = generate_reply(user_id, text)
         save_message(user_id, "assistant", reply)
@@ -153,7 +238,6 @@ async def handle_message(message: types.Message):
         print(f"[HANDLER ERROR] {e}")
         await message.answer("Something went wrong. Try again!")
 
-# Rest of your file (run_flask, main, etc.) remains the same as your original
 def run_flask():
     from webhook_server import app as flask_app
     port = int(os.environ.get("PORT", 8080))
