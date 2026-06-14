@@ -13,14 +13,8 @@ from aiogram.filters import Command
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from config import BOT_TOKEN, PATREON_URL
+from db import init_db, save_message, get_free_messages_used, increment_free_messages
 from db_shared import get_free_messages_used, increment_free_messages, get_image_tracking, record_image_sent, increment_message_counter
-from db_shared import (
-    init_subscription_db,
-    use_activation_code,
-    is_user_subscribed,
-    get_user_subscription,
-    get_active_subscriber_ids
-)
 from ai import generate_reply, generate_knock_message
 from images import detect_image_request, get_random_image
 # ── CHANGE THESE 2 LINES FOR EACH NEW BOT ──────────────
@@ -211,7 +205,6 @@ async def handle_message(message: types.Message):
                 # Proactive NSFW offer on 2nd and 3rd free message
                 if used == 1 or used == 2:
                     await message.answer("マスター…💦 もしよかったら…私の唇でチンポにキスしてあげようか？😏")
-
                 # ================== VERY STRONG IMAGE TRIGGER ==================
                 text_lower = text.lower()
                 if any(word in text_lower for word in [
@@ -225,7 +218,6 @@ async def handle_message(message: types.Message):
                     else:
                         await message.answer("💦 待っててね、今エッチな写真送るよ…😏")
                 # =================================================================
-
                 # Warn when 1 message left
                 if remaining_after == 1:
                     await message.answer(
@@ -250,50 +242,18 @@ async def handle_message(message: types.Message):
                 )
                 return
         # Paid user flow
-       category = detect_image_request(text)
+        category = detect_image_request(text)
         if category:
-            data = get_image_tracking(user_id)
-            images_given = data['images_given']
-            msgs_since = data['messages_since_last_image']
-
-            # First 3 images sent immediately on demand
-            if images_given < 3:
-                img = get_random_image(category)
-                if img:
-                    await bot.send_photo(message.chat.id, img)
-                    record_image_sent(user_id)
-                    return
-                else:
-                    await message.answer("I don't have any photos for that yet!")
-                    return
+            img = get_random_image(category)
+            if img:
+                await bot.send_photo(message.chat.id, img)
+                return
             else:
-                # Pattern: 10 chats → image, 20 chats → image, 10, 20, 10, 20...
-                paid_count = images_given - 3
-                threshold = 10 if paid_count % 2 == 0 else 20
-
-                if msgs_since >= threshold:
-                    img = get_random_image(category)
-                    if img:
-                        await bot.send_photo(message.chat.id, img)
-                        record_image_sent(user_id)
-                        return
-                    else:
-                        await message.answer("I don't have any photos for that yet!")
-                        return
-                else:
-                    # Bot teases and makes user wait in character
-                    tease_prompt = "[The user is asking for a photo. Playfully tease them and make them wait a little longer without explaining why. Stay in character as their girlfriend. 1-2 sentences max. Be flirty not robotic.]"
-                    save_message(user_id, "user", text)
-                    tease = generate_reply(user_id, tease_prompt)
-                    save_message(user_id, "assistant", tease)
-                    increment_message_counter(user_id)
-                    await message.answer(tease)
-                    return
-
+                await message.answer("I don't have any photos for that yet!")
+                return
         save_message(user_id, "user", text)
         reply = generate_reply(user_id, text)
         save_message(user_id, "assistant", reply)
-        increment_message_counter(user_id)
         await message.answer(reply)
     except Exception as e:
         print(f"[HANDLER ERROR] {e}")
