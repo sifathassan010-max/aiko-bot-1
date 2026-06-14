@@ -199,3 +199,41 @@ def increment_message_counter(user_id):
     """, (user_id,))
     conn.commit()
     conn.close()
+
+# ====================== NEW: Daily 100 Messages Limit ======================
+def init_daily_limit_db():
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS daily_limits (
+            user_id BIGINT,
+            date DATE,
+            messages_today INTEGER DEFAULT 0,
+            PRIMARY KEY (user_id, date)
+        )
+    """)
+    conn.commit()
+    conn.close()
+    print("[DB] Daily limit table ready.")
+
+def get_today_messages(user_id: int) -> int:
+    conn = get_conn()
+    c = conn.cursor()
+    today = datetime.now().date()
+    c.execute("SELECT messages_today FROM daily_limits WHERE user_id = %s AND date = %s", (user_id, today))
+    row = c.fetchone()
+    conn.close()
+    return row[0] if row else 0
+
+def increment_today_messages(user_id: int):
+    conn = get_conn()
+    c = conn.cursor()
+    today = datetime.now().date()
+    c.execute("""
+        INSERT INTO daily_limits (user_id, date, messages_today)
+        VALUES (%s, %s, 1)
+        ON CONFLICT (user_id, date) 
+        DO UPDATE SET messages_today = daily_limits.messages_today + 1
+    """, (user_id, today))
+    conn.commit()
+    conn.close()
