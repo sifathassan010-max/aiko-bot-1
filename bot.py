@@ -223,7 +223,19 @@ async def handle_message(message: types.Message):
                     record_image_sent(user_id)
                     return
 
-            await message.answer("Mmm baby... I'm so turned on right now 😏💦 Just keep talking to me a little longer...")
+            # === Varied flirty delay replies (this is the only changed part) ===
+            delay_replies = [
+                "Mmm baby... I'm so turned on right now 😏💦 Just keep talking to me a little longer...",
+                "Hehe~ you're so naughty today 🥵 My body is aching for you... chat with me more first 💕",
+                "Ahh... I want to show you so bad 😩 But I'm feeling a bit shy right now... keep seducing me~",
+                "Not yet baby... I'm getting so wet thinking about it 😘 Talk dirty to me more...",
+                "Mou~ you're making me blush so hard 🥺💦 Be patient and I'll give you something really good...",
+                "I love how eager you are... 😏 Just a little more conversation and I'll reward you properly 💋",
+                "My lips are tingling just thinking about it... keep going babe, I'm almost ready~ 🔥"
+            ]
+            
+            reply = random.choice(delay_replies)
+            await message.answer(reply)
             increment_message_counter(user_id)
             return
 
