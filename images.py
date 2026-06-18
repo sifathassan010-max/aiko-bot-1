@@ -16,66 +16,41 @@ def detect_image_request(text: str):
         return None
     text_lower = text.lower()
     
-    # ================== KEYWORD MAP (This is used first) ==================
+    # ================== CLEAN SFW KEYWORD MAP ==================
     keyword_map = {
-        "kiss": "dick-kiss",
-        "kissing": "dick-kiss",
-        "chu": "dick-kiss",
-        "キス": "dick-kiss",
-        "ちゅっ": "dick-kiss",
-        "dick kiss": "dick-kiss",
-        "kiss dick": "dick-kiss",
-        "kiss my dick": "dick-kiss",
-        "cock kiss": "dick-kiss",
-        "suck dick": "dick-kiss",
-        "blowjob": "dick-kiss",
-        "dick": "dick-kiss",
-        "cock": "dick-kiss",
-        "チンポ": "dick-kiss",
+        "selfie": "selfie",
+        "photo": "selfie",
+        "picture": "selfie",
+        "画像": "selfie",
+        "写真": "selfie",
+        "send me": "selfie",
         
-        "picture": "dick-kiss",
-        "photo": "dick-kiss",
-        "pic": "dick-kiss",
-        "画像": "dick-kiss",
-        "送って": "dick-kiss",
-        "send": "dick-kiss",
-        
-        "boobs": "boobs",
-        "breast": "boobs",
-        "tits": "boobs",
-        "tit": "boobs",
-        "cleavage": "boobs",
+        "cute": "cute",
+        "smile": "smile",
+        "happy": "smile",
         
         "hug": "hug",
         "hugging": "hug",
         "embrace": "hug",
         
-        "lick": "lick",
-        "licking": "lick",
-        "tongue": "lick",
+        "kiss": "kiss",
+        "chu": "kiss",
+        "キス": "kiss",
+        "ちゅっ": "kiss",
         
-        "fuck": "fuck",
-        "fucking": "fuck",
-        "sex": "fuck",
+        "night": "night",
+        "goodnight": "night",
+        "oyasumi": "night",
         
-        "suck": "suck",
-        "sucking": "suck",
+        "morning": "morning",
+        "ohayou": "morning",
         
-        "doggy": "doggy",
-        "doggy style": "doggy",
-        "from behind": "doggy",
-        
-        "cum": "cum",
-        "creampie": "cum",
-        "facial": "cum",
-        
-        "nude": "nude",
-        "naked": "nude",
-        "full nude": "nude",
+        "date": "date",
+        "together": "date",
     }
     # =====================================================================
 
-    # Check keyword map first (most important)
+    # Check keyword map first
     for keyword, folder_name in keyword_map.items():
         if keyword in text_lower:
             return folder_name
