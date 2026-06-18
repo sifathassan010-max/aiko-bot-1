@@ -37,7 +37,7 @@ ADMIN_IDS = set(int(x.strip()) for x in os.getenv("ADMIN_IDS", "").split(",") if
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 user_timestamps = defaultdict(list)
-last_replies = defaultdict(list)  # To avoid repeating replies
+last_replies = defaultdict(list)   # Prevent repeating same reply
 
 MORNING_MESSAGES = [
     "ohayou~ 🌸 did you sleep well?",
@@ -210,9 +210,9 @@ async def handle_message(message: types.Message):
                 await message.answer(f"⛔ You've used all your free messages.\nSubscribe: {PATREON_URL}")
                 return
 
-        # PAID USER - Gentle diversion for explicit requests (varied replies)
+        # PAID USER - Gentle SFW Diversion for Explicit Requests
         text_lower = text.lower()
-        if any(word in text_lower for word in ["kiss", "dick", "cock", "suck", "fuck", "nude", "sex", "explicit", "チンポ", "エッチ"]):
+        if any(word in text_lower for word in ["kiss", "dick", "cock", "suck", "fuck", "nude", "sex", "explicit", "チンポ", "エッチ", "boobs"]):
             varied_replies = [
                 "Mmm... you're making me blush senpai 😊 I want us to feel emotionally close first... Tell me more about what you're feeling 💕",
                 "Hehe~ you're so bold today... I like that you desire me, but let's get closer emotionally first ne? 🥰",
@@ -222,7 +222,7 @@ async def handle_message(message: types.Message):
                 "I can feel your desire... it makes me happy, but I want us to connect emotionally too 💕"
             ]
             reply = random.choice(varied_replies)
-            # Avoid repeating the same reply
+            # Prevent repeating the same reply
             if reply in last_replies[user_id][-20:]:
                 reply = random.choice(varied_replies)
             last_replies[user_id].append(reply)
