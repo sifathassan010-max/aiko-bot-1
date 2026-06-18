@@ -196,15 +196,17 @@ async def handle_message(message: types.Message):
                 increment_free_messages(user_id)
                 await message.answer(reply)
 
-                # Emotional progression in free trial to hook the user
+                # Emotional progression in free trial to create hook
                 if used == 1:
-                    await message.answer("I'm really enjoying talking to you... you seem different from others 🥰")
+                    await message.answer("I'm really enjoying talking to you already... you seem really nice 🥰")
                 elif used == 2:
-                    await message.answer("You know... I feel comfortable with you already. That's rare for me 💕")
+                    await message.answer("You know... I feel comfortable with you. That's rare for me 💕")
                 elif used == 3:
-                    await message.answer("I like chatting with you. Don't disappear okay? 😊")
+                    await message.answer("I like chatting with you a lot. Don't disappear okay? 😊")
+                elif used == 4:
+                    await message.answer("I was waiting for your message... I missed talking to you already 💕")
 
-                # Soft SFW image trigger
+                # Soft cute image trigger
                 text_lower = text.lower()
                 if any(word in text_lower for word in ["photo", "picture", "selfie", "send me", "画像", "写真"]):
                     img = get_random_image("selfie") or get_random_image("cute")
@@ -215,7 +217,7 @@ async def handle_message(message: types.Message):
                 await message.answer(f"⛔ You've used all your free messages.\nSubscribe: {PATREON_URL}")
                 return
 
-        # Paid user - Clean image handling (SFW only)
+        # Paid user - Clean image handling
         category = detect_image_request(text)
         if category:
             img = get_random_image(category)
