@@ -117,13 +117,12 @@ async def check_inactive_users():
         except Exception as e:
             print(f"[SCHEDULER] Inactivity check failed for {user_id}: {e}")
 
-# ================== NEW: SOCIAL MEDIA REMINDER (Every day at 8 PM JST) ==================
 async def send_social_reminder():
     print("[SCHEDULER] Sending social media reminder...")
     user_ids = get_active_subscriber_ids(BOT_NAME)
     for user_id in user_ids:
         try:
-            reminder = "Babe~ ❤️ Have you checked and liked my latest post on FB and Twitter today? It makes me so happy when you do 🥺💕\n\nFB: [PUT YOUR FACEBOOK LINK HERE]\nTwitter: [PUT YOUR TWITTER LINK HERE]"
+            reminder = "Babe~ ❤️ Have you checked my latest post on FB and Twitter today? It makes me so happy when you like and comment 🥺💕\n\nFB: [YOUR FB LINK]\nTwitter: [YOUR TWITTER LINK]"
             await bot.send_message(user_id, reminder)
             await asyncio.sleep(0.5)
         except Exception as e:
@@ -191,19 +190,24 @@ async def handle_message(message: types.Message):
         if not has_access(user_id):
             if is_in_free_trial(user_id):
                 used = get_free_messages_used(user_id)
-                remaining_after = FREE_LIMIT - used - 1
                 save_message(user_id, "user", text)
                 reply = generate_reply(user_id, text)
                 save_message(user_id, "assistant", reply)
                 increment_free_messages(user_id)
                 await message.answer(reply)
 
-                if used == 1 or used == 2:
-                    await message.answer("マスター…💦 もしよかったら…私の唇でチンポにキスしてあげようか？😏")
+                # Emotional progression in free trial to hook the user
+                if used == 1:
+                    await message.answer("I'm really enjoying talking to you... you seem different from others 🥰")
+                elif used == 2:
+                    await message.answer("You know... I feel comfortable with you already. That's rare for me 💕")
+                elif used == 3:
+                    await message.answer("I like chatting with you. Don't disappear okay? 😊")
 
+                # Soft SFW image trigger
                 text_lower = text.lower()
-                if any(word in text_lower for word in ["yes", "sure", "ok", "please", "はい", "して", "いいよ", "してほしい", "したい", "kiss", "dick", "cock", "チンポ", "picture", "photo", "send me"]):
-                    img = get_random_image("dick-kiss")
+                if any(word in text_lower for word in ["photo", "picture", "selfie", "send me", "画像", "写真"]):
+                    img = get_random_image("selfie") or get_random_image("cute")
                     if img:
                         await bot.send_photo(message.chat.id, img)
                 return
@@ -211,39 +215,13 @@ async def handle_message(message: types.Message):
                 await message.answer(f"⛔ You've used all your free messages.\nSubscribe: {PATREON_URL}")
                 return
 
-        # Paid user image control  ← (Your working logic is still here)
+        # Paid user - Clean image handling (SFW only)
         category = detect_image_request(text)
         if category:
-            data = get_image_tracking(user_id)
-            images_given = data['images_given']
-            msgs_since = data['messages_since_last_image']
-            if images_given < 3:
-                img = get_random_image(category)
-                if img:
-                    await bot.send_photo(message.chat.id, img)
-                    record_image_sent(user_id)
-                    return
-            paid_count = images_given - 3
-            threshold = 10 if paid_count % 2 == 0 else 20
-            if msgs_since >= threshold:
-                img = get_random_image(category)
-                if img:
-                    await bot.send_photo(message.chat.id, img)
-                    record_image_sent(user_id)
-                    return
-
-            # Varied flirty delay replies
-            delay_replies = [
-                "Mmm baby... I'm so turned on right now 😏💦 Just keep talking to me a little longer...",
-                "Hehe~ you're so naughty today 🥵 My body is aching for you... chat with me more first 💕",
-                "Ahh... I want to show you so bad 😩 But I'm feeling a bit shy right now... keep seducing me~",
-                "Not yet baby... I'm getting so wet thinking about it 😘 Talk dirty to me more...",
-                "Mou~ you're making me blush so hard 🥺💦 Be patient and I'll give you something really good...",
-            ]
-            reply = random.choice(delay_replies)
-            await message.answer(reply)
-            increment_message_counter(user_id)
-            return
+            img = get_random_image(category)
+            if img:
+                await bot.send_photo(message.chat.id, img)
+                return
 
         # Normal chat
         save_message(user_id, "user", text)
@@ -273,10 +251,7 @@ async def main():
     scheduler.add_job(send_morning_messages, CronTrigger(hour=8, minute=0, timezone=JST))
     scheduler.add_job(send_night_messages, CronTrigger(hour=22, minute=0, timezone=JST))
     scheduler.add_job(check_inactive_users, CronTrigger(hour='*/4', timezone=JST))
-    
-    # ================== SOCIAL MEDIA REMINDER ==================
-    scheduler.add_job(send_social_reminder, CronTrigger(hour=20, minute=0, timezone=JST))  # 8 PM JST every day
-
+    scheduler.add_job(send_social_reminder, CronTrigger(hour=20, minute=0, timezone=JST))
     scheduler.start()
     print("[SCHEDULER] Started")
     print("Starting bot...")
