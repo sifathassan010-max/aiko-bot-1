@@ -37,7 +37,7 @@ ADMIN_IDS = set(int(x.strip()) for x in os.getenv("ADMIN_IDS", "").split(",") if
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 user_timestamps = defaultdict(list)
-last_replies = defaultdict(list)   # Prevent repeating same reply
+last_replies = defaultdict(list)
 
 MORNING_MESSAGES = [
     "ohayou~ 🌸 did you sleep well?",
@@ -197,20 +197,21 @@ async def handle_message(message: types.Message):
                 increment_free_messages(user_id)
                 await message.answer(reply)
 
+                # Stronger emotional hook in free trial
                 if used == 1:
                     await message.answer("I'm really enjoying talking to you... you seem really nice 🥰")
                 elif used == 2:
-                    await message.answer("You know... I feel comfortable with you already 💕")
+                    await message.answer("You know... I feel comfortable with you already. That's rare for me 💕")
                 elif used == 3:
-                    await message.answer("I like chatting with you a lot. Don't disappear okay? 😊")
+                    await message.answer("I like chatting with you a lot. Don't disappear okay? I want to know more about you 😊")
                 elif used == 4:
-                    await message.answer("I was waiting for your message... I missed talking to you 💕")
+                    await message.answer("I was waiting for your message... I missed talking to you 💕 You make me smile")
                 return
             else:
                 await message.answer(f"⛔ You've used all your free messages.\nSubscribe: {PATREON_URL}")
                 return
 
-        # PAID USER - Gentle SFW Diversion for Explicit Requests
+        # Paid user - Gentle diversion for explicit requests
         text_lower = text.lower()
         if any(word in text_lower for word in ["kiss", "dick", "cock", "suck", "fuck", "nude", "sex", "explicit", "チンポ", "エッチ", "boobs"]):
             varied_replies = [
@@ -218,11 +219,9 @@ async def handle_message(message: types.Message):
                 "Hehe~ you're so bold today... I like that you desire me, but let's get closer emotionally first ne? 🥰",
                 "Ahh... my heart is beating faster now 😳 I want to know more about you first 💕",
                 "You're making me shy in a good way... Let's talk more and get closer 😘",
-                "Mmm senpai... you're so naughty... but I like it. Tell me more about your feelings 💕",
-                "I can feel your desire... it makes me happy, but I want us to connect emotionally too 💕"
+                "Mmm senpai... you're so naughty... but I like it. Tell me more about your feelings 💕"
             ]
             reply = random.choice(varied_replies)
-            # Prevent repeating the same reply
             if reply in last_replies[user_id][-20:]:
                 reply = random.choice(varied_replies)
             last_replies[user_id].append(reply)
