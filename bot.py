@@ -37,7 +37,7 @@ ADMIN_IDS = set(int(x.strip()) for x in os.getenv("ADMIN_IDS", "").split(",") if
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 user_timestamps = defaultdict(list)
-last_replies = defaultdict(list)   # Prevent repeating same reply
+last_replies = defaultdict(list)   # Anti-repetition cache
 
 MORNING_MESSAGES = [
     "ohayou~ 🌸 did you sleep well?",
@@ -133,7 +133,7 @@ async def send_social_reminder():
 async def cmd_start(message: types.Message):
     user_id = message.from_user.id
     if has_access(user_id):
-        await message.answer("Hey! I'm Aiko 👋 Welcome back!")
+        await message.answer("Hey babe! I'm Aiko 👋 Welcome back 💕")
     elif is_in_free_trial(user_id):
         used = get_free_messages_used(user_id)
         remaining = FREE_LIMIT - used
@@ -154,7 +154,7 @@ async def cmd_activate(message: types.Message):
         return
     success, result = use_activation_code(code, user_id, BOT_NAME)
     if success:
-        await message.answer("✅ Subscription activated! Welcome!")
+        await message.answer("✅ Subscription activated! Welcome back babe 💕")
     else:
         await message.answer("❌ Invalid or already used code.")
 
@@ -181,11 +181,11 @@ async def cmd_clear(message: types.Message):
 async def handle_message(message: types.Message):
     try:
         user_id = message.from_user.id
-        text = message.text
+        text = message.text or ""
         if not text:
             return
         if is_rate_limited(user_id):
-            await message.answer("Slow down a little!")
+            await message.answer("Slow down a little babe~ 😊")
             return
 
         if not has_access(user_id):
@@ -207,31 +207,30 @@ async def handle_message(message: types.Message):
                     await message.answer("I was waiting for your message... I missed talking to you 💕")
                 return
             else:
-                await message.answer(f"⛔ You've used all your free messages.\nSubscribe: {PATREON_URL}")
+                await message.answer(f"⛔ You've used all your free messages.\nSubscribe here: {PATREON_URL}")
                 return
 
-        # PAID USER - Gentle SFW Diversion for Explicit Requests
+        # === SFW DIVERSION FOR EXPLICIT REQUESTS ===
         text_lower = text.lower()
-        if any(word in text_lower for word in ["kiss", "dick", "cock", "suck", "fuck", "nude", "sex", "explicit", "チンポ", "エッチ", "boobs", "pussy"]):
+        if any(word in text_lower for word in ["kiss", "dick", "cock", "suck", "fuck", "nude", "sex", "horny", "boobs", "pussy", "explicit", "チンポ", "エッチ", "naked"]):
             varied_replies = [
-                "Mmm... you're making me blush senpai 😊 I want us to feel emotionally close first... Tell me more about what you're feeling 💕",
-                "Hehe~ you're so bold today... I like that you desire me, but let's get closer emotionally first ne? 🥰",
-                "Ahh... my heart is beating faster now 😳 I want to know more about you first 💕",
-                "You're making me shy in a good way... Let's talk more and get closer 😘",
-                "Mmm senpai... you're so naughty... but I like it. Tell me more about your feelings 💕",
-                "I can feel your desire... it makes me happy, but I want us to connect emotionally too 💕"
+                "Hehe~ you're being very bold today 😳 I feel flattered... but I want us to feel close emotionally first. Tell me what's on your mind babe 💕",
+                "Mmm... my heart is beating faster 🥰 I like that you desire me, but let's get to know each other deeper first ne? I want this to feel real...",
+                "Ahh senpai... you're making me blush 💕 I want to be close to you too, but in a way that makes us both feel special. What are you feeling right now?",
+                "You're so direct... it makes me smile 😊 I really enjoy talking with you. Let's share our feelings more... I want to know the real you 💕",
+                "Wow... you're making me shy in a good way 🥺 I like this side of you, but I want our connection to grow stronger emotionally first. Stay with me okay?"
             ]
             reply = random.choice(varied_replies)
-            # Strong repetition prevention
-            if reply in last_replies[user_id][-20:]:
+            # Strong anti-repetition
+            if reply in last_replies[user_id][-15:]:
                 reply = random.choice([r for r in varied_replies if r != reply])
             last_replies[user_id].append(reply)
-            if len(last_replies[user_id]) > 30:
-                last_replies[user_id] = last_replies[user_id][-30:]
+            if len(last_replies[user_id]) > 25:
+                last_replies[user_id] = last_replies[user_id][-25:]
             await message.answer(reply)
             return
 
-        # Paid user image control (SFW only)
+        # SFW Image handling
         category = detect_image_request(text)
         if category:
             img = get_random_image(category)
@@ -239,7 +238,7 @@ async def handle_message(message: types.Message):
                 await bot.send_photo(message.chat.id, img)
                 return
 
-        # Normal chat
+        # Normal paid chat
         save_message(user_id, "user", text)
         reply = generate_reply(user_id, text)
         save_message(user_id, "assistant", reply)
