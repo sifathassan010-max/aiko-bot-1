@@ -50,7 +50,7 @@ def detect_image_request(text: str):
     }
     # =====================================================================
 
-    # Check keyword map first
+    # Check keyword map first (most important)
     for keyword, folder_name in keyword_map.items():
         if keyword in text_lower:
             return folder_name
