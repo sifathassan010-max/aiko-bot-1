@@ -37,7 +37,6 @@ ADMIN_IDS = set(int(x.strip()) for x in os.getenv("ADMIN_IDS", "").split(",") if
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 user_timestamps = defaultdict(list)
-last_replies = defaultdict(list)
 
 MORNING_MESSAGES = [
     "ohayou~ 🌸 did you sleep well babe?",
@@ -66,7 +65,6 @@ def has_access(user_id: int) -> bool:
 def is_in_free_trial(user_id: int) -> bool:
     return get_free_messages_used(user_id) < FREE_LIMIT
 
-# === SCHEDULERS ===
 async def send_morning_messages():
     print("[SCHEDULER] Morning messages")
     for user_id in get_active_subscriber_ids(BOT_NAME):
@@ -83,21 +81,15 @@ async def send_night_messages():
             await asyncio.sleep(0.4)
         except: pass
 
-async def check_inactive_users():
-    print("[SCHEDULER] Inactivity check")
-    # simplified for stability
-    pass
-
 async def send_social_reminder():
     print("[SCHEDULER] Social reminder")
-    reminder = "Babe~ ❤️ Did you see my latest post today? It makes me happy when you like it 🥰\nFB: [YOUR LINK]\nTwitter: [YOUR LINK]"
+    reminder = "Babe~ ❤️ Have you checked my latest post on FB and Twitter today? It makes me so happy when you like it 🥰\n\nFB: [YOUR FB LINK]\nTwitter: [YOUR TWITTER LINK]"
     for user_id in get_active_subscriber_ids(BOT_NAME):
         try:
             await bot.send_message(user_id, reminder)
             await asyncio.sleep(0.5)
         except: pass
 
-# === COMMANDS ===
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     user_id = message.from_user.id
@@ -108,16 +100,49 @@ async def cmd_start(message: types.Message):
     else:
         await message.answer(f"Hey! You've used your free messages 💕\nSubscribe: {PATREON_URL}")
 
-# Other commands (activate, status, clear) - keep them as before or add if needed
+@dp.message(Command("activate"))
+async def cmd_activate(message: types.Message):
+    parts = message.text.split()
+    if len(parts) < 2:
+        await message.answer("Please include your code:\n/activate YOUR_CODE")
+        return
+    code = parts[1].upper().strip()
+    user_id = message.from_user.id
+    if has_access(user_id):
+        await message.answer("✅ You already have an active subscription!")
+        return
+    success, result = use_activation_code(code, user_id, BOT_NAME)
+    if success:
+        await message.answer("✅ Subscription activated! Welcome!")
+    else:
+        await message.answer("❌ Invalid or already used code.")
+
+@dp.message(Command("status"))
+async def cmd_status(message: types.Message):
+    user_id = message.from_user.id
+    if user_id in ADMIN_IDS:
+        await message.answer("👑 Admin account — unlimited free access.")
+        return
+    sub = get_user_subscription(user_id, BOT_NAME)
+    if sub:
+        await message.answer("📋 You have an active subscription.")
+    else:
+        used = get_free_messages_used(user_id)
+        await message.answer(f"Free messages remaining: {max(0, FREE_LIMIT - used)}/{FREE_LIMIT}")
+
+@dp.message(Command("clear"))
+async def cmd_clear(message: types.Message):
+    from db import clear_history
+    clear_history(message.from_user.id)
+    await message.answer("Chat history cleared! Fresh start 🌸")
 
 @dp.message()
 async def handle_message(message: types.Message):
     try:
         user_id = message.from_user.id
-        text = (message.text or "").strip().lower()
+        text = message.text
         if not text:
             return
-
         if is_rate_limited(user_id):
             await message.answer("Slow down a little~ 😊")
             return
@@ -125,67 +150,41 @@ async def handle_message(message: types.Message):
         if not has_access(user_id):
             if is_in_free_trial(user_id):
                 used = get_free_messages_used(user_id)
-                save_message(user_id, "user", message.text)
-                reply = generate_reply(user_id, message.text)
+                save_message(user_id, "user", text)
+                reply = generate_reply(user_id, text)
                 save_message(user_id, "assistant", reply)
                 increment_free_messages(user_id)
                 await message.answer(reply)
 
-                if used == 1:
-                    await asyncio.sleep(1)
+                # Free trial selfie logic
+                if used == 1 or used == 2:
                     await message.answer("Would you like to see a selfie of me? 💕 Just say yes~")
+                elif used == 3:
+                    await message.answer("I really like talking to you... Would you like another selfie? 😊")
+
+                # Check if user wants selfie
+                text_lower = text.lower()
+                if any(word in text_lower for word in ["yes", "sure", "ok", "please", "はい", "うん", "いいよ", "送って", "selfie", "photo", "picture"]):
+                    img = get_random_image("selfie") or get_random_image("cute")
+                    if img:
+                        await bot.send_photo(message.chat.id, img)
+
                 return
             else:
-                await message.answer(f"⛔ Free messages finished.\nSubscribe: {PATREON_URL}")
+                await message.answer(f"⛔ You've used all your free messages.\nSubscribe: {PATREON_URL}")
                 return
 
-        # PAID USER
-        if any(word in text for word in ["kiss", "dick", "cock", "suck", "fuck", "nude", "sex", "horny", "boobs", "pussy", "naked", "explicit"]):
-            varied_replies = [
-                "Hehe~ you're so direct today 😳 It makes my heart beat faster... but I want us to feel emotionally close first. What's on your mind babe?",
-                "Mmm... you're making me blush 🥰 I like that you desire me, but let's get to know each other deeper ne? Tell me how you're feeling",
-                "Ahh senpai... you're very bold 💕 I feel flattered, but I want this connection to feel real. What made you say that?",
-                "Wow... you're making me shy in a good way 😊 I really enjoy talking with you. Let's share more feelings first?",
-                "Hehe~ my heart is racing now... but I want to feel closer to the real you first. Stay with me okay? 💕"
-            ]
-            reply = random.choice(varied_replies)
-            if reply in last_replies[user_id][-12:]:
-                reply = random.choice([r for r in varied_replies if r != reply])
-            last_replies[user_id].append(reply)
-            if len(last_replies[user_id]) > 25:
-                last_replies[user_id] = last_replies[user_id][-25:]
-            await message.answer(reply)
-            return
-
-        # Image handling
-        category = detect_image_request(message.text)
+        # Paid user
+        category = detect_image_request(text)
         if category:
-            if not has_access(user_id):  # Free
-                if any(y in text for y in ["yes", "yeah", "sure", "はい", "うん"]):
-                    img = get_random_image("selfie")
-                    if img:
-                        await bot.send_photo(message.chat.id, img)
-                else:
-                    await message.answer("Just say yes if you want a selfie 💕")
+            img = get_random_image(category)
+            if img:
+                await bot.send_photo(message.chat.id, img)
                 return
-            else:  # Paid - frequency
-                data = get_image_tracking(user_id)
-                images_given = data.get('images_given', 0)
-                msgs_since = data.get('messages_since_last_image', 0)
-                if images_given < 3 or msgs_since >= (10 if (images_given - 3) % 2 == 0 else 20):
-                    img = get_random_image(category)
-                    if img:
-                        await bot.send_photo(message.chat.id, img)
-                        record_image_sent(user_id)
-                        return
-                else:
-                    await message.answer("Mmm... soon babe, keep talking to me 🥰")
-                    increment_message_counter(user_id)
-                    return
 
-        # Normal chat
-        save_message(user_id, "user", message.text)
-        reply = generate_reply(user_id, message.text)
+        # Normal paid chat
+        save_message(user_id, "user", text)
+        reply = generate_reply(user_id, text)
         save_message(user_id, "assistant", reply)
         increment_message_counter(user_id)
         await message.answer(reply)
