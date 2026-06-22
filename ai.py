@@ -65,7 +65,6 @@ def generate_reply(user_id, user_message):
         return "Sorry, I got distracted... what were you saying? 💕"
 
 def generate_knock_message(user_id):
-    """Generate a proactive message — bot reaches out to user first."""
     try:
         history = get_history(user_id, 4)
         messages = [{"role": "system", "content": build_system_prompt()}]
